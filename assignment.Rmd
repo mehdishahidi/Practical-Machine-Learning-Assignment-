@@ -1,0 +1,77 @@
+---
+title: "assignment"
+author: "Mahdi Aleshahidi"
+date: "26 July 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+Load the required libraries
+```{r echo=TRUE}
+library(caret)
+library(rpart)
+library(randomForest)
+library(e1071)
+```
+Set seed to have reproducable result
+```{r echo=TRUE}
+set.seed(300)
+```
+load the training and testing files and convert missing values to NA
+```{r echo=TRUE}
+training <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!", ""))#convert missing values to NA
+testing <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
+```
+clean data and removing the coloumns with missing values
+```{r echo=TRUE}
+#remove coloums with missing values
+training<-training[,colSums(is.na(training)) == 0]
+
+testing <-testing[,colSums(is.na(testing)) == 0]
+```
+coloum 1 to 7 are unrelated and not required as they are not useful for our prediction so we can remove these variables
+```{r echo=TRUE}
+#remove variable 1 to 7
+training   <-training[,-c(1:7)]
+testing <-testing[,-c(1:7)]
+```
+partition the training data into validation test
+```{r echo=TRUE}
+#partition data to cross validation
+intrain<- createDataPartition(y=training$classe,p=0.7, list = FALSE)
+validation=training[-intrain,]
+training<-training[intrain,]
+```
+Now that we have finally finished the pre-processing we can try with modeling. I have decided to use two of the most powerful classsification algorithems
+
+The first algorithem is random forest
+```{r echo=TRUE}
+#modeling
+#randomforest
+model1 <- randomForest(classe ~. , data=training, method="class")
+pred1 <- predict(model1,validation)
+confusionMatrix(pred1, validation$classe)
+#accuracy=0.99
+```
+printing the result of confusion matrix for random forest shows a very high accuracy. with 99% accuracy
+
+the second model I have used is support vector machine
+```{r echo=TRUE}
+#svm
+model2 <- svm(classe~.,training)
+pred2<-predict(model2,validation)
+confusionMatrix(pred2, validation$classe)
+#accuracy=0.95
+````
+printing the result of support vector machine illustrate that it is also highly accurate however random forest was slightly more accurate. and since we have already 99% accuracy with random forest combining this classification models is not making any sense. so we just use random forest for our finall and test result prediction
+
+```{r echo=TRUE}
+#final prediction on test set
+finalprediction<-predict(model1,testing)
+finalprediction
+```
+
